@@ -17,6 +17,9 @@ This document outlines the steps taken to deploy this Django project to Render.
    # exit on error
    set -o errexit
 
+   # Set Python path explicitly
+   export PYTHONPATH=$PYTHONPATH:$PWD
+
    # Install python dependencies
    pip install -r requirements.txt
 
@@ -35,7 +38,7 @@ This document outlines the steps taken to deploy this Django project to Render.
        name: django-project
        runtime: python
        buildCommand: "./build.sh"
-       startCommand: "gunicorn mysite.wsgi:application"
+       startCommand: "cd $RENDER_PROJECT_DIR && gunicorn mysite.wsgi:application"
        envVars:
          - key: DATABASE_URL
            fromDatabase:
@@ -45,6 +48,8 @@ This document outlines the steps taken to deploy this Django project to Render.
            generateValue: true
          - key: PYTHON_VERSION
            value: 3.11
+         - key: PYTHONPATH
+           value: $RENDER_PROJECT_DIR
 
    databases:
      - name: django_db
@@ -108,3 +113,28 @@ If you encounter issues:
 2. Verify that all environment variables are set correctly
 3. Ensure your database migrations are running properly
 4. Check that static files are being served correctly
+
+### Module Not Found Error
+
+If you encounter a "ModuleNotFoundError: No module named 'app'" or similar error:
+
+1. Make sure your startCommand explicitly sets the working directory:
+
+   ```yaml
+   startCommand: "cd $RENDER_PROJECT_DIR && gunicorn mysite.wsgi:application"
+   ```
+
+2. Set the PYTHONPATH environment variable:
+
+   ```yaml
+   envVars:
+     - key: PYTHONPATH
+       value: $RENDER_PROJECT_DIR
+   ```
+
+3. Update your build.sh to explicitly set the Python path:
+   ```bash
+   export PYTHONPATH=$PYTHONPATH:$PWD
+   ```
+
+These changes ensure that Python can find your project modules correctly.
